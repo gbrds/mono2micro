@@ -38,6 +38,18 @@ app.post('/events', (req, res) => {
                 console.log(`Post ${data.postId} not found in Query service`);
             }
             break;
+
+        case 'CommentModerated':
+            const postWithComment = posts.find(p => p.id === data.postId);
+            if (postWithComment) {
+                const comment = postWithComment.comments.find(c => c.id === data.id);
+                if (comment) {
+                    comment.status = data.status;
+                    console.log(`Comment ${data.id} status updated to ${data.status}`);
+                }
+            }
+            break;
+        
         default:
             console.log('Unknown event type:', type);
     }

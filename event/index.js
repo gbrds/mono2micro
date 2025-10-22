@@ -12,6 +12,7 @@ app.post('/events', async (req, res) => {
     await axios.post('http://localhost:3001/events', event); // Posts
     await axios.post('http://localhost:3002/events', event); // Comments
     await axios.post('http://localhost:3004/events', event); // Query
+    await axios.post('http://localhost:3005/events', event); // Moderation
     // Add others later
   } catch (err) {
     console.log('Error forwarding event:', err.message);

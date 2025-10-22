@@ -35,7 +35,8 @@ router.post('/:postId', async (req, res) => {
     const newComment = {
         id: Date.now(),
         postId,
-        content: req.body.content
+        content: req.body.content,
+        status: 'pending'
     };
     comments.push(newComment);
 
