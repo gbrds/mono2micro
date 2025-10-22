@@ -2,47 +2,39 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 export default function PostPage() {
-    const { id } = useParams()
-    const [post, setPost] = useState(null)
-    const [comment, setComment] = useState('')
+    const { id } = useParams();
+    const [post, setPost] = useState(null);
+    const [comment, setComment] = useState('');
 
     useEffect(() => {
-        // fetch post
-        fetch(`http://localhost:3001/posts/${id}`)
+        fetch(`http://localhost:3004/posts`)
             .then(res => res.json())
-            .then(postData => {
+            .then(posts => {
+                const postData = posts.find(p => p.id === Number(id));
                 setPost(postData);
-            });
-
-        // fetch comments for this post
-        fetch(`http://localhost:3002/comments/${id}`)
-            .then(res => res.json())
-            .then(commentsData => {
-                setPost(prev => prev ? { ...prev, comments: commentsData } : { comments: commentsData });
             });
     }, [id]);
 
-
     const handleSubmit = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
 
         const res = await fetch(`http://localhost:3002/comments/${id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: comment })
-        })
+        });
 
         if (res.ok) {
-            const newComment = await res.json()
+            const newComment = await res.json();
             setPost({
                 ...post,
                 comments: [...(post.comments || []), newComment]
-            })
-            setComment('')
+            });
+            setComment('');
         }
-    }
+    };
 
-    if (!post) return <p>Loading...</p>
+    if (!post) return <p>Loading...</p>;
 
     return (
         <div className="formBox">
@@ -59,13 +51,13 @@ export default function PostPage() {
             <h4>Add Comment</h4>
             <form onSubmit={handleSubmit}>
                 <input 
-                type='text'
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                required
+                    type='text'
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    required
                 />
                 <button type="submit">Add</button>
             </form>
         </div>
-    )
+    );
 }
