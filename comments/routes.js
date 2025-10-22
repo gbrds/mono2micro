@@ -38,6 +38,16 @@ router.post('/:postId', async (req, res) => {
         content: req.body.content
     };
     comments.push(newComment);
+
+    try {
+        await axios.post('http://localhost:3003/events', {
+            type: 'CommentCreated',
+            data: newComment
+        })
+    } catch (err) {
+        console.error('Failed to emit CommentCreated event: ', err.message)
+    }
+
     res.status(201).json(newComment);
 });
 

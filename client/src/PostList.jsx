@@ -12,9 +12,6 @@ export default function PostList() {
 
     return (
         <div>
-            <Link to={'/Add'}>
-                <button>Add Post</button>
-            </Link>
             {posts.map(post => (
                 <Link to={`/posts/${post.id}`}>
                     <div key={post.id} className='displayBox'>
@@ -23,6 +20,11 @@ export default function PostList() {
                     </div>
                 </Link>
             ))}
+            <div className='add-post-container'>
+                <Link to={'/Add'}>
+                    <button>Add Post</button>
+                </Link>
+            </div>
         </div>
     )
 }

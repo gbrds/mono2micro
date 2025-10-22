@@ -15,6 +15,10 @@ app.get('/', (req, res) => {
   res.send('Comments service running');
 });
 
+app.post('/events', async (req, res) => {
+  res.send({});
+})
+
 app.listen(PORT, () => {
   console.log(`Comments service running on http://localhost:${PORT}`);
 });

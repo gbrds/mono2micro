@@ -15,6 +15,14 @@ app.get('/', (req, res) => {
   res.send('Posts service running');
 });
 
+app.get('/events', (req, res) => {
+  res.send({ status: 'Event received (GET)' });
+})
+
+app.post('/events', (req, res) => {
+  res.send({ status: 'Event received (POST)' });
+});
+
 app.listen(PORT, () => {
   console.log(`Posts service running on http://localhost:${PORT}`);
 });
