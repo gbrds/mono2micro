@@ -1,0 +1,39 @@
+services:
+  posts:
+    build: ./posts
+    ports:
+      - "3001:3001"
+    networks:
+      - app-network
+
+  comments:
+    build: ./comments
+    ports:
+      - "3002:3002"
+    networks:
+      - app-network
+
+  events:
+    build: ./event
+    ports:
+      - "3003:3003"
+    networks:
+      - app-network
+
+  query:
+    build: ./query
+    ports:
+      - "3004:3004"
+    networks:
+      - app-network
+
+  moderation:
+    build: ./moderation
+    ports:
+      - "3005:3005"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
