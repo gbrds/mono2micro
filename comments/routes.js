@@ -4,7 +4,7 @@ const router = express.Router();
 
 let comments = [];
 
-const POSTS_API = 'http://posts:3001/posts';
+const POSTS_API = 'http://posts-srv:3001/posts';
 
 // Get comments for a post
 router.get('/:postId', async (req, res) => {
@@ -41,7 +41,7 @@ router.post('/:postId', async (req, res) => {
     comments.push(newComment);
 
     try {
-        await axios.post('http://events:3003/events', {
+        await axios.post('http://events-srv:3003/events', {
             type: 'CommentCreated',
             data: newComment
         })

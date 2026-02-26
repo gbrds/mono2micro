@@ -17,7 +17,7 @@ app.post('/events', async (req, res) => {
         const moderatedComment = { ...data, status };
 
         try {
-            await axios.post('http://events:3003/events', {
+            await axios.post('http://events-srv:3003/events', {
                 type: 'CommentModerated',
                 data: moderatedComment
             });

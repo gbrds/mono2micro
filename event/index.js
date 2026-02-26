@@ -9,10 +9,10 @@ app.post('/events', async (req, res) => {
 
   // Send the event to other services
   try {
-    await axios.post('http://posts:3001/events', event); // Posts
-    await axios.post('http://comments:3002/events', event); // Comments
-    await axios.post('http://query:3004/events', event); // Query
-    await axios.post('http://moderation:3005/events', event); // Moderation
+    await axios.post('http://posts-srv:3001/events', event); // Posts
+    await axios.post('http://comments-srv:3002/events', event); // Comments
+    await axios.post('http://query-srv:3004/events', event); // Query
+    await axios.post('http://moderation-srv:3005/events', event); // Moderation
     // Add others later
   } catch (err) {
     console.log('Error forwarding event:', err.message);
