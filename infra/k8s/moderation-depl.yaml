@@ -16,4 +16,4 @@ spec:
         - name: moderation
           image: gbrds/moderation
           ports:
-            - containerPort: 3004
+            - containerPort: 3005

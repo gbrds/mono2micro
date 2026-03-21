@@ -7,7 +7,7 @@ let comments = [];
 const POSTS_API = 'http://posts-srv:3001/posts';
 
 // Get comments for a post
-router.get('/:postId', async (req, res) => {
+router.get('/:postId/comments', async (req, res) => {
     const postId = Number(req.params.postId);
 
     // Check if post exists via Posts API
@@ -22,7 +22,7 @@ router.get('/:postId', async (req, res) => {
 });
 
 // Add comment to a post
-router.post('/:postId', async (req, res) => {
+router.post('/:postId/comments', async (req, res) => {
     const postId = Number(req.params.postId);
 
     // Verify post exists
@@ -41,7 +41,7 @@ router.post('/:postId', async (req, res) => {
     comments.push(newComment);
 
     try {
-        await axios.post('http://events-srv:3003/events', {
+        await axios.post('http://event-srv:3003/events', {
             type: 'CommentCreated',
             data: newComment
         })

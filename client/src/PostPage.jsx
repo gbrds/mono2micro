@@ -7,7 +7,8 @@ export default function PostPage() {
     const [comment, setComment] = useState('');
 
     useEffect(() => {
-        fetch(`http://127.0.0.1:58299/posts`)
+        // fetch list of posts then filter locally; API returns all posts
+        fetch(`/posts`)
             .then(res => res.json())
             .then(posts => {
                 const postData = posts.find(p => p.id === Number(id));
@@ -18,7 +19,7 @@ export default function PostPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const res = await fetch(`http://127.0.0.1:58285/comments/${id}`, {
+        const res = await fetch(`/posts/${id}/comments`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ content: comment })

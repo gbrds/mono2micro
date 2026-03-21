@@ -16,4 +16,4 @@ spec:
         - name: client
           image: gbrds/client
           ports:
-            - containerPort: 5005
+            - containerPort: 5005  # container listens on 5005; service maps to 3000

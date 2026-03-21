@@ -11,7 +11,7 @@ export default function AppPost() {
 
         const newPost = { title, content }
 
-        const res = await fetch('http://127.0.0.1:58258/posts', {
+        const res = await fetch('/posts/create', {
             method :'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newPost),

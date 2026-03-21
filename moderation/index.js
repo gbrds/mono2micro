@@ -4,7 +4,7 @@ const axios = require('axios');
 const app = express();
 app.use(express.json());
 
-const PORT = process.env.PORT || 3005; // pick a free port
+const PORT = process.env.PORT || 3005;
 
 app.post('/events', async (req, res) => {
     const { type, data } = req.body;
@@ -17,7 +17,7 @@ app.post('/events', async (req, res) => {
         const moderatedComment = { ...data, status };
 
         try {
-            await axios.post('http://events-srv:3003/events', {
+            await axios.post('http://event-srv:3003/events', {
                 type: 'CommentModerated',
                 data: moderatedComment
             });
@@ -30,6 +30,6 @@ app.post('/events', async (req, res) => {
     res.send({ status: 'OK' });
 });
 
-app.listen(PORT, () => {
-    console.log(`Moderation service listening on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Moderation service listening on 0.0.0.0:${PORT}`);
 });

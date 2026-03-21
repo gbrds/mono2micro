@@ -5,7 +5,8 @@ export default function PostList() {
     const [posts, setPosts] = useState([])
 
     useEffect(() => {
-        fetch('http://localhost:3004/posts')
+        // use relative path so ingress hostname/port handles routing
+        fetch('/posts')
         .then(res => res.json())
         .then(data => setPosts(data));
     }, [])
@@ -21,7 +22,7 @@ export default function PostList() {
                 </Link>
             ))}
             <div className='add-post-container'>
-                <Link to={'/Add'}>
+                <Link to={'/add'}>
                     <button>Add Post</button>
                 </Link>
             </div>

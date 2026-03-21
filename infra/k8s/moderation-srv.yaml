@@ -5,8 +5,8 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: comments
+    app: moderation    # internal moderation service
   ports:
     - protocol: TCP
-      port: 3004
-      targetPort: 3004
+      port: 3005
+      targetPort: 3005

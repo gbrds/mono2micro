@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: blog-backend-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: blog.local
+      http:
+        paths:
+          # Create a new post
+          - path: /posts/create
+            pathType: Prefix
+            backend:
+              service:
+                name: posts-srv
+                port:
+                  number: 3001
+
+          # Add comment to a post (matches /posts/{id}/comments)
+          - path: /posts/[0-9]+/comments
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: comments-srv
+                port:
+                  number: 3002
+
+          # Get list of all posts with comments (query service)
+          - path: /posts
+            pathType: Prefix
+            backend:
+              service:
+                name: query-srv
+                port:
+                  number: 3004

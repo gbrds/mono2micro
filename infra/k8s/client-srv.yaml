@@ -5,8 +5,8 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: comments
+    app: client      # match deployment label for frontend
   ports:
     - protocol: TCP
-      port: 5005
-      targetPort: 5005
+      port: 3000        # expose on 3000 so ingress can route there
+      targetPort: 5005  # container listens on 5005 (nginx)

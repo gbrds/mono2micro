@@ -16,4 +16,4 @@ spec:
         - name: query
           image: gbrds/query
           ports:
-            - containerPort: 3005
+            - containerPort: 3004

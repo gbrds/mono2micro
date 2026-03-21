@@ -5,8 +5,8 @@ metadata:
 spec:
   type: ClusterIP
   selector:
-    app: comments
+    app: query         # deployment label for query service
   ports:
     - protocol: TCP
-      port: 3005
-      targetPort: 3005
+      port: 3004
+      targetPort: 3004

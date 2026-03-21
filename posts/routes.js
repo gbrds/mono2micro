@@ -6,7 +6,7 @@ let posts = [];
 
 router.get('/', (req, res) => res.json(posts));
 
-router.post('/', async (req, res) => {
+router.post('/create', async (req, res) => {
     const newPost = {
         id: Date.now(),
         title: req.body.title,
@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
     };
     posts.push(newPost);
     try {
-        await axios.post('http://events-srv:3003/events', {
+        await axios.post('http://event-srv:3003/events', {
             type: 'PostCreated',
             data: newPost
         });
