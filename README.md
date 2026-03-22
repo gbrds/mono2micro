@@ -1,87 +1,189 @@
-# mono2micro Blog – API & URL Reference
+# Blog Microservices
 
-This document collects all of the important endpoints, service names and URLs used across the micro‑services and the React frontend.
-
-## Backend services
-Each service runs on a fixed port and is referenced by its Kubernetes `Service` name when calling from other services inside the cluster.
-
-| Service         | Internal Service Name | Port | Key Routes (mounted)                    | Description                             |
-|-----------------|-----------------------|------|------------------------------------------|-----------------------------------------|
-| posts           | `posts-srv`           | 3001 | `GET  /posts`<br>`GET /posts/:id`<br>`POST /posts/create` | Manage posts; emits `PostCreated` events to event bus. |
-| comments        | `comments-srv`        | 3002 | `GET  /posts/:id/comments`<br>`POST /posts/:id/comments` | Add/read comments for a post; emits `CommentCreated`. |
-| query           | `query-srv`           | 3004 | `GET  /posts`                             | Aggregates posts+comments, used by frontend. |
-| event bus       | `event-srv`           | 3003 | `POST /events`                            | Internal only; forwards events to all services. |
-| moderation      | `moderation-srv`      | 3005 | `POST /events`                            | Internal only; listens for `CommentCreated` and emits `CommentModerated`. |
-
-Each service also exposes a simple `/events` endpoint for diagnostics (and called by ingress in dev).
-
-### Inter‑service calls
-- **posts** → event bus: `http://event-srv:3003/events`<br>
-- **comments** → posts: `http://posts-srv:3001/posts/:id`<br>
-- **comments** → event bus: `http://event-srv:3003/events`<br>
-- **event** → posts, comments, query, moderation (see event/index.js)
-- **moderation** → event bus: `http://event-srv:3003/events` (to emit moderation results)
-
-> All internal calls use `http://<service-name>:<port>` so DNS from Kubernetes resolves them.
-
-## Kubernetes ingress
-Ingress rules are defined in `infra/k8s/ingress-backend.yaml`.  There are two resources
-under the `blog.local` host:
-
-1. **backend-ingress** – handles API traffic
-    - `POST /posts/create` → `posts-srv:3001`
-    - `POST /posts/[0-9]+/comments` → `comments-srv:3002`
-    - `GET /posts` → `query-srv:3004`
-
-2. **client-ingress** – catches everything else and forwards to the React SPA (`client-srv:3000`) with a
-   rewrite to `/` to support client-side routing.
-
-> To use these rules add `blog.local` to your hosts file pointing at the cluster IP (e.g. Minikube IP).
-
-When running outside Kubernetes (e.g. via `docker-compose`), the services listen on the same ports on
-`localhost` – but the frontend has been updated to use **relative** paths so the ingress host/port is not
-hard-coded.
-
-## Frontend fetch URLs
-All network requests originating from `client/src` use relative URLs:
-
-- Fetch post list: `GET /posts`
-- Create a post: `POST /posts/create`  (body: `{ title, content }`)
-- Read single post + comments: the app fetches `/posts` and filters by id
-- Add a comment: `POST /posts/:id/comments` (body: `{ content }`)
-
-These match the ingress definitions above. When the browser hits `http://blog.local/` the requests are
-routed by nginx to the appropriate backend service.
-
-## Useful build & run commands
-
-### Docker (client)
-```sh
-# from repository root
-cd client
-docker build -t gbrds/client:latest .
-docker run --rm -p 5005:5005 gbrds/client:latest
-```
-
-### Kubernetes (Minikube)
-```sh
-minikube addons enable ingress
-# ensure blog.local points at minikube IP
-echo "$(minikube ip) blog.local" | sudo tee -a /etc/hosts
-kubectl apply -f infra/k8s
-kubectl rollout status deployment/posts-depl
-```
-
-### Local development (docker-compose)
-```sh
-docker-compose up --build
-```
-
-The above commands are primarily for reference; the repository’s existing `docker-compose.yml` and
-`infra/k8s` manifests cover service definitions.
+A full-stack blog application built as a microservices system running on Kubernetes. Supports creating posts, adding comments, event-driven moderation, JWT authentication, HTTPS, and live API documentation via Swagger UI.
 
 ---
 
-This README centralizes the URLs and endpoints used throughout the project.  Keep it up to date when
-adding new routes or changing service ports.  If you deploy the app in a different environment the
-`host` value in the ingress and/or the frontend fetch logic may need to change accordingly.
+## Services
+
+| Service | Port | Description |
+|---|---|---|
+| `posts-srv` | 3001 | Create blog posts |
+| `comments-srv` | 3002 | Add comments to posts |
+| `query-srv` | 3004 | Aggregated read model (posts + comments) |
+| `moderation-srv` | 3005 | Auto-moderates comments via events |
+| `event-bus` | 3003 | Routes events between services |
+| `auth-srv` | 5006 | JWT login, refresh, logout, verify |
+| `client-srv` | 3000 | React frontend |
+| `swagger-ui` | 80 | API documentation |
+
+---
+
+## Architecture
+
+All inter-service communication is event-driven through the event bus:
+
+```
+posts-srv      → PostCreated       → event-bus → query-srv
+comments-srv   → CommentCreated    → event-bus → moderation-srv
+moderation-srv → CommentModerated  → event-bus → query-srv
+```
+
+External traffic enters through a single **Ingress NGINX** gateway over HTTPS.
+
+---
+
+## Prerequisites
+
+- Docker Desktop
+- Minikube
+- kubectl
+- Node.js 18+
+- Git Bash (for openssl on Windows)
+
+---
+
+## First-Time Setup
+
+```bash
+# Start Minikube and enable Ingress
+minikube start
+minikube addons enable ingress
+
+# Generate self-signed TLS certificate (Git Bash on Windows)
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key -out tls.crt -subj "//CN=blog.local"
+
+# Store cert as Kubernetes secret
+kubectl create secret tls blog-tls --cert=tls.crt --key=tls.key
+
+# Load Swagger API spec
+kubectl create configmap api-docs --from-file=openapi.yaml -n default
+
+# Deploy all services
+kubectl apply -f infra/k8s/
+```
+
+**Add to hosts file** (as Administrator on Windows — `C:\Windows\System32\drivers\etc\hosts`):
+```
+127.0.0.1    blog.local
+```
+
+---
+
+## Daily Start
+
+```bash
+minikube start
+kubectl port-forward -n ingress-nginx service/ingress-nginx-controller 8080:80 8443:443
+```
+
+Keep the port-forward terminal open while using the app.
+
+---
+
+## Accessing the App
+
+| URL | What |
+|---|---|
+| `https://blog.local:8443` | React frontend |
+| `https://blog.local:8443/docs/` | Swagger UI (API docs) |
+
+> The browser will show a certificate warning — expected for a self-signed cert. Click through to proceed.
+
+---
+
+## API Endpoints
+
+### Auth
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/auth/login` | ❌ | Login, returns JWT token |
+| `POST` | `/auth/refresh` | ❌ | Refresh existing token |
+| `POST` | `/auth/logout` | ❌ | Logout |
+| `GET` | `/auth/verify` | ✅ | Verify token (used internally) |
+
+**Login credentials (dummy user):**
+```json
+{ "username": "admin", "password": "password123" }
+```
+
+**Login response:**
+```json
+{ "token": "<jwt>" }
+```
+
+### Posts
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/posts/create` | ❌ | Create a new post |
+| `GET` | `/posts` | ✅ JWT | Get all posts with comments |
+
+**Create post body:**
+```json
+{ "title": "My post", "content": "Hello world" }
+```
+
+### Comments
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/posts/:id/comments` | ❌ | Get comments for a post |
+| `POST` | `/posts/:id/comments` | ✅ JWT | Add a comment to a post |
+
+**Add comment body:**
+```json
+{ "content": "Great post!" }
+```
+
+**Comment statuses:** `pending` → `approved` or `rejected`
+> Comments containing the word `orange` are automatically rejected by the moderation service.
+
+---
+
+## Using JWT in Postman
+
+1. `POST https://blog.local:8443/auth/login` with credentials
+2. Copy the `token` from the response
+3. On protected requests add header:
+   ```
+   Authorization: Bearer <token>
+   ```
+
+## Using JWT in Swagger UI
+
+1. Open `https://blog.local:8443/docs/`
+2. Click **Authorize**
+3. Enter `Bearer <token>` and confirm
+
+---
+
+## Rebuilding a Service
+
+After code changes:
+
+```bash
+docker build -t <dockerhub-user>/<service> ./<service>
+docker push <dockerhub-user>/<service>
+kubectl rollout restart deployment/<service>-depl
+```
+
+Check logs after restart:
+```bash
+kubectl logs deployment/<service>-depl
+```
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| `blog.local` not reachable | Port-forward not running | Run port-forward command |
+| `404 Not Found` | Wrong path or Ingress misconfigured | `kubectl describe ingress blog-ingress` |
+| `401 Unauthorized` | Missing or expired token | Re-login via `/auth/login` |
+| `500 Internal Server Error` | Event bus unreachable | Check service name is `event-srv` not `events-srv` |
+| `502 Bad Gateway` | Pod crashed | `kubectl logs deployment/<n>-depl` |
+| Swagger shows Petstore | ConfigMap issue | Check CRLF in `openapi.yaml`, recreate configmap |
