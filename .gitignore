@@ -4,3 +4,4 @@
 /client/node_modules
 /query/node_modules
 moderation/node_modules
+auth/node_modules

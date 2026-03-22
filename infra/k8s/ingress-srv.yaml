@@ -40,6 +40,14 @@ spec:
                 port:
                   number: 3004
 
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-srv
+                port:
+                  number: 5006
+
           - path: /
             pathType: Prefix
             backend:

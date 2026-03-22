@@ -28,8 +28,6 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// mount router under /posts so that ingress path /posts/:id/comments
-// will be forwarded correctly to this service
 app.use('/posts', commentsRouter);
 
 app.get('/', (req, res) => {
@@ -38,7 +36,7 @@ app.get('/', (req, res) => {
 
 app.post('/events', async (req, res) => {
   res.send({});
-})
+});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Comments service running on 0.0.0.0:${PORT}`);

@@ -1,6 +1,7 @@
 const express = require('express');
-const axios = require('axios'); // to call Posts API
+const axios = require('axios');
 const router = express.Router();
+const { requireAuth } = require('./middleware');
 
 let comments = [];
 
@@ -10,7 +11,6 @@ const POSTS_API = 'http://posts-srv:3001/posts';
 router.get('/:postId/comments', async (req, res) => {
     const postId = Number(req.params.postId);
 
-    // Check if post exists via Posts API
     try {
         await axios.get(`${POSTS_API}/${postId}`);
     } catch (err) {
@@ -22,10 +22,9 @@ router.get('/:postId/comments', async (req, res) => {
 });
 
 // Add comment to a post
-router.post('/:postId/comments', async (req, res) => {
+router.post('/:postId/comments', requireAuth, async (req, res) => {
     const postId = Number(req.params.postId);
 
-    // Verify post exists
     try {
         await axios.get(`${POSTS_API}/${postId}`);
     } catch (err) {
@@ -44,9 +43,9 @@ router.post('/:postId/comments', async (req, res) => {
         await axios.post('http://event-srv:3003/events', {
             type: 'CommentCreated',
             data: newComment
-        })
+        });
     } catch (err) {
-        console.error('Failed to emit CommentCreated event: ', err.message)
+        console.error('Failed to emit CommentCreated event: ', err.message);
     }
 
     res.status(201).json(newComment);

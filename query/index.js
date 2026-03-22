@@ -29,8 +29,28 @@ const PORT = process.env.PORT || 3004;
 // In-memory storage
 let posts = [];
 
+const axios = require('axios');
+
+const requireAuth = async (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    if (!authHeader) return res.status(401).json({ error: 'No token provided' });
+
+    try {
+        const response = await axios.get('http://auth-srv:5006/auth/verify', {
+            headers: { authorization: authHeader }
+        });
+        if (response.data.valid) {
+            next();
+        } else {
+            res.status(401).json({ error: 'Invalid token' });
+        }
+    } catch (err) {
+        res.status(401).json({ error: 'Auth service error' });
+    }
+};
+
 // Get all posts with comments
-app.get('/posts', (req, res) => {
+app.get('/posts', requireAuth, (req, res) => {
     console.log('Fetching all posts, total:', posts.length);
     posts.forEach(p => {
         console.log(`Post ${p.id}: "${p.title}" with ${p.comments.length} comments`);
