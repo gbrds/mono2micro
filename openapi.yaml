@@ -1,0 +1,285 @@
+openapi: 3.0.3
+info:
+  title: Blog Microservices API
+  version: 1.0.0
+  description: |
+    REST API for a blog microservices application running on Kubernetes.
+    Provides endpoints for managing posts, comments, and authentication.
+    Some endpoints require a JWT Bearer token — obtain one via POST /auth/login.
+  contact:
+    name: gbrds
+    email: admin@blog.local
+tags:
+  - name: Auth
+    description: Authentication and token management
+  - name: Posts
+    description: Creating and retrieving blog posts
+  - name: Comments
+    description: Adding and retrieving comments on posts
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and receive JWT token
+      description: |
+        Authenticates a user with username and password.
+        Returns a JWT access token to be used in protected endpoints.
+        Use the returned token in the Swagger UI Authorize button as: Bearer <token>
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  description: The user's username
+                password:
+                  type: string
+                  description: The user's password
+            example:
+              username: admin
+              password: password123
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh an existing JWT token
+      description: |
+        Accepts an expired or valid JWT token via Authorization header
+        and returns a new token with a fresh expiry time.
+      responses:
+        "200":
+          description: New token issued
+          content:
+            application/json:
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              example:
+                error: No token provided
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current user
+      description: Invalidates the current session. Returns a confirmation message.
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              example:
+                message: Logged out successfully
+
+  /auth/verify:
+    get:
+      tags: [Auth]
+      summary: Verify a JWT token
+      description: |
+        Validates the provided Bearer token.
+        Used internally by other services to check authorization.
+        Returns whether the token is valid and the decoded user payload.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Token is valid
+          content:
+            application/json:
+              example:
+                valid: true
+                user:
+                  id: 1
+                  username: admin
+        "401":
+          description: Invalid or expired token
+          content:
+            application/json:
+              example:
+                valid: false
+                error: Invalid or expired token
+
+  /posts/create:
+    post:
+      tags: [Posts]
+      summary: Create a new blog post
+      description: |
+        Creates a new post with a title and content.
+        The post is stored in memory and a PostCreated event is emitted to the event bus.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                  description: Title of the post
+                content:
+                  type: string
+                  description: Body content of the post
+            example:
+              title: My first post
+              content: Hello from the blog!
+      responses:
+        "201":
+          description: Post created successfully
+          content:
+            application/json:
+              example:
+                id: 1774126671880
+                title: My first post
+                content: Hello from the blog!
+        "500":
+          description: Failed to emit event
+          content:
+            application/json:
+              example:
+                error: Failed to emit event
+
+  /posts:
+    get:
+      tags: [Posts]
+      summary: Get all posts with comments
+      description: |
+        Returns all posts along with their associated comments and moderation status.
+        This endpoint is protected — a valid JWT Bearer token is required.
+        Obtain a token via POST /auth/login, then click Authorize and enter: Bearer <token>
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of posts with comments
+          content:
+            application/json:
+              example:
+                - id: 1774126671880
+                  title: My first post
+                  content: Hello from the blog!
+                  comments:
+                    - id: 1774126800000
+                      postId: 1774126671880
+                      content: Great post!
+                      status: approved
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              example:
+                error: No token provided
+        "503":
+          description: Auth service unreachable
+          content:
+            application/json:
+              example:
+                error: Auth service error
+
+  /posts/{id}/comments:
+    get:
+      tags: [Comments]
+      summary: Get comments for a post
+      description: Returns all comments associated with the given post ID.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: "1774126671880"
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              example:
+                - id: 1774126800000
+                  postId: 1774126671880
+                  content: Great post!
+                  status: approved
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              example:
+                error: Post not found
+
+    post:
+      tags: [Comments]
+      summary: Add a comment to a post
+      description: |
+        Adds a new comment to the specified post.
+        The comment starts with status "pending" and goes through moderation via the event bus.
+        Comments containing the word "orange" will be rejected by the moderation service.
+        This endpoint requires a valid JWT Bearer token.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          example: "1774126671880"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content:
+                  type: string
+                  description: The comment text
+            example:
+              content: This is a great post!
+      responses:
+        "201":
+          description: Comment created, pending moderation
+          content:
+            application/json:
+              example:
+                id: 1774126800000
+                postId: 1774126671880
+                content: This is a great post!
+                status: pending
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              example:
+                error: No token provided
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              example:
+                error: Post not found
